@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="Example Ant Build with JaCoCo Offline Instrumentation" 
+	default="rebuild" 
+	xmlns:jacoco="antlib:org.jacoco.ant">
+
+	<property name="src.dir" location="./src/main" />
+	<property name="result.dir" location="./target" />
+	<property name="result.classes.dir" location="${result.dir}/classes" />
+	<property name="result.classes.instr.dir" location="${result.dir}/classes-instr" />
+	<property name="result.report.dir" location="${result.dir}/site/jacoco" />
+	<property name="result.exec.file" location="${result.dir}/jacoco.exec" />
+
+	<!-- Ensure that org.jacoco.examples.ant has been built -->
+	<property name="source.dir" location="./../org.jacoco.examples.ant"/>
+	<property name="source.classes.dir" location="${source.dir}/target/classes"/>
+
+	<path id="libs">
+		<fileset dir="./libs">
+			<include name="**/*.jar" />
+		</fileset>
+		<pathelement location="${source.classes.dir}"/>
+	</path>
+	
+	<!-- Step 1: Import JaCoCo Ant tasks -->
+	<taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+		<classpath path="./libs/jacocoant.jar" />
+	</taskdef>
+
+	<target name="clean">
+		<delete dir="${result.dir}" />
+	</target>
+
+	<target name="compile">
+		<mkdir dir="${result.classes.dir}" />
+		<javac srcdir="${src.dir}" destdir="${result.classes.dir}" debug="true" includeantruntime="false">
+			<classpath refid="libs"/>
+		</javac>
+	</target>
+
+	<target name="instrument" depends="compile">
+		<!-- Step 2: Instrument class files -->
+		<jacoco:instrument destdir="${result.classes.instr.dir}">
+			<fileset dir="${source.classes.dir}" />
+		</jacoco:instrument>
+	</target>
+
+
+	<target name="test" depends="instrument">
+		<!-- Step 3: Run tests with instrumented classes -->
+		
+		<junit printsummary="yes" haltonfailure="yes">
+			<classpath>
+				<fileset dir="./libs">
+					<include name="**/*.jar" />
+				</fileset>
+				<pathelement location="${result.classes.instr.dir}"/>
+				<pathelement location="${result.classes.dir}"/>
+			</classpath>
+		    <batchtest fork="yes" todir="${result.exec.file}">
+		        <fileset dir="${src.dir}">
+		            <include name="**/*Test*.java"/>
+		            <exclude name="**/AllTests.java"/>
+		        </fileset>
+		    </batchtest>
+			<sysproperty key="jacoco-agent.destfile" file="${result.exec.file}"/>
+		</junit>
+	</target>
+
+	<target name="report" depends="test">
+		<!-- Step 4: Create coverage report -->
+		<jacoco:report>
+
+			<!-- This task needs the collected execution data and ... -->
+			<executiondata>
+				<file file="${result.exec.file}" />
+			</executiondata>
+
+			<!-- the class files and optional source files ... -->
+			<structure name="JaCoCo Ant Example">
+				<classfiles>
+					<fileset dir="${source.classes.dir}" />
+				</classfiles>
+				<sourcefiles encoding="UTF-8">
+					<fileset dir="${source.dir}/src/main" />
+				</sourcefiles>
+			</structure>
+
+			<!-- to produce reports in different formats. -->
+			<html destdir="${result.report.dir}" />
+			<csv destfile="${result.report.dir}/report.csv" />
+			<xml destfile="${result.report.dir}/report.xml" />
+		</jacoco:report>
+	</target>
+
+	<target name="rebuild" depends="clean,compile,instrument,test,report" />
+
+</project>

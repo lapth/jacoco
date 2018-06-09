@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="Example Ant Build with JaCoCo Offline Instrumentation" 
+	default="rebuild">
+
+	<property name="src.dir" location="./src/main" />
+	<property name="result.dir" location="./target" />
+	<property name="result.classes.dir" location="${result.dir}/classes" />
+
+	<target name="clean">
+		<delete dir="${result.dir}" />
+	</target>
+
+	<target name="compile">
+		<mkdir dir="${result.classes.dir}" />
+		<javac srcdir="${src.dir}" destdir="${result.classes.dir}" debug="true" includeantruntime="false" />
+	</target>
+
+	<target name="rebuild" depends="clean,compile" />
+
+</project>
